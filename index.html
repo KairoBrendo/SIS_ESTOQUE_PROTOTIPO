@@ -53,7 +53,7 @@ a{text-decoration:none}
 @media(min-width:768px){
   .sidebar{transform:translateX(0)}
   .main-wrap{margin-left:var(--sidebar-w)}
-  #page-escolas{margin-left:var(--sidebar-w);width:calc(100% - var(--sidebar-w));box-sizing:border-box}
+
 }
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:299;backdrop-filter:blur(2px)}
 .sidebar-overlay.active{display:block}
@@ -132,6 +132,10 @@ a{text-decoration:none}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .topbar-date{font-size:12px;color:var(--muted);display:none}
 @media(min-width:600px){.topbar-date{display:block}}
+.btn-sair-mobile{display:flex;align-items:center;gap:5px;background:none;border:1px solid rgba(192,57,43,.4);color:var(--danger);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-sair-mobile:hover{background:rgba(192,57,43,.08)}
+.btn-sair-mobile i{font-size:15px}
+@media(min-width:768px){.btn-sair-mobile{display:none}}
 
 /* ─── BOTTOM NAV ─── */
 .bottom-nav{
@@ -454,7 +458,7 @@ textarea.form-control{resize:vertical;min-height:76px}
 .chip{
   display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
   border-radius:99px;font-size:11px;font-weight:600;
-  background:rgba(26,58,107,.08);color:var(--primary)
+  background:rgba(38, 71, 121, 0.08);color:var(--primary)
 }
 
 /* ─── RELATÓRIOS CHARTS ─── */
@@ -489,12 +493,13 @@ textarea.form-control{resize:vertical;min-height:76px}
   .main-wrap{margin-left:0!important}
   .page{padding:8px!important}
   .print-header{display:block!important}
-  .charts-grid{grid-template-columns:1fr 1fr!important;page-break-inside:avoid}
-  .chart-card{break-inside:avoid}
-  .card{border:1px solid #ccc!important}
-  table{font-size:11px}
-  th,td{padding:6px 8px!important}
-  .rel-summary{grid-template-columns:repeat(4,1fr)!important}
+  .rel-summary,.charts-grid{display:none!important}
+  #rel-resultado-card{display:block!important;border:none!important;box-shadow:none!important}
+  #rel-resultado-card .card-header{border-bottom:2px solid #1A3A6B;margin-bottom:8px}
+  table{font-size:11px;width:100%;border-collapse:collapse}
+  th{background:#1A3A6B!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  th,td{padding:5px 8px!important;border:1px solid #ddd}
+  tr:nth-child(even){background:#f5f7fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 .print-header{display:none}
 .print-header-inner{
@@ -518,7 +523,6 @@ textarea.form-control{resize:vertical;min-height:76px}
   <button class="a11y-font" onclick="a11yFonte(1)"  title="Aumentar fonte" style="font-size:16px">A+</button>
   <div class="a11y-sep"></div>
   <button class="a11y-btn" id="a11y-inv"   onclick="a11yToggle('inv')">  <i class="ti ti-circle-half-2"></i> Alto Contraste</button>
-  <button class="a11y-btn" id="a11y-links" onclick="a11yToggle('links')"><i class="ti ti-link"></i> Destacar links</button>
 </div>
 
 <div id="app-wrap">
@@ -590,14 +594,14 @@ textarea.form-control{resize:vertical;min-height:76px}
       <div class="sb-item" id="nav-produtos" onclick="go('produtos')">
         <i class="ti ti-box"></i><span>Produtos</span>
       </div>
+      <div class="sb-item" id="nav-escolas" onclick="go('escolas')">
+        <i class="ti ti-school"></i><span>Escolas</span>
+      </div>
       <div class="sb-item" id="nav-entrada" onclick="go('entrada')">
         <i class="ti ti-package-import"></i><span>Entrada</span>
       </div>
       <div class="sb-item" id="nav-saida" onclick="go('saida')">
         <i class="ti ti-package-export"></i><span>Saída / Distribuição</span>
-      </div>
-      <div class="sb-item" id="nav-escolas" onclick="go('escolas')">
-        <i class="ti ti-school"></i><span>Escolas</span>
       </div>
       <div class="sb-section">Análise</div>
       <div class="sb-item" id="nav-relatorios" onclick="go('relatorios')">
@@ -630,6 +634,9 @@ textarea.form-control{resize:vertical;min-height:76px}
       <div class="topbar-right">
         <span class="topbar-date" id="topbar-date"></span>
         <span id="alert-badge"></span>
+        <button class="btn-sair-mobile" onclick="doLogout()" title="Sair do sistema">
+          <i class="ti ti-logout"></i> Sair
+        </button>
       </div>
     </header>
 
@@ -962,9 +969,12 @@ textarea.form-control{resize:vertical;min-height:76px}
               <select id="rel-escola" class="form-control"><option value="">Todas</option></select>
             </div>
           </div>
-          <div class="mt-16" style="display:flex;justify-content:flex-end">
-            <button class="btn btn-primary" onclick="gerarRelatorio()">
-              <i class="ti ti-search"></i> Gerar Relatório
+          <div class="mt-16" style="display:flex;justify-content:flex-end;gap:8px">
+            <button class="btn btn-secondary" onclick="gerarRelatorio()">
+              <i class="ti ti-search"></i> Visualizar
+            </button>
+            <button class="btn btn-primary" onclick="gerarEImprimir()">
+              <i class="ti ti-printer"></i> Gerar e Salvar PDF
             </button>
           </div>
         </div>
@@ -985,112 +995,73 @@ textarea.form-control{resize:vertical;min-height:76px}
         </div>
       </div>
     </main>
+
+    <!-- ████ ESCOLAS ████ -->
+    <main class="page" id="page-escolas">
+      <div class="page-header">
+        <div><h2>Escolas</h2><p>Gerenciamento das unidades escolares atendidas</p></div>
+      </div>
+      <div style="display:grid;gap:18px">
+        <div class="card" id="esc-form-card">
+          <div class="card-header"><h3 id="esc-form-titulo"><i class="ti ti-school" style="color:var(--primary)"></i> Nova Escola</h3></div>
+          <div class="card-body">
+            <input type="hidden" id="esc-id"/>
+            <div class="form-grid cols-2">
+              <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nome da Escola *</label><input id="esc-nome" class="form-control" placeholder="Ex: EM. Exemplo da Silva"/></div>
+              <div class="form-group"><label class="form-label">Responsável / Diretor</label><input id="esc-diretor" class="form-control" placeholder="Nome do responsável"/></div>
+              <div class="form-group"><label class="form-label">CNPJ</label><input id="esc-cnpj" class="form-control" placeholder="00.000.000/0001-00" maxlength="18"/></div>
+              <div class="form-group"><label class="form-label">Código INEP</label><input id="esc-inep" class="form-control" placeholder="Ex: 21123080" maxlength="8"/></div>
+              <div class="form-group"><label class="form-label">Telefone</label><input id="esc-tel" class="form-control" placeholder="(99) 99999-9999" maxlength="15"/></div>
+              <div class="form-group" style="grid-column:1/-1"><label class="form-label">Endereço</label><input id="esc-endereco" class="form-control" placeholder="Ex: Rua Principal, s/n – Centro"/></div>
+              <div class="form-group"><label class="form-label">Localidade</label><input id="esc-local" class="form-control" placeholder="Ex: Sede, Povoado São João"/></div>
+              <div class="form-group"><label class="form-label">Zona</label>
+                <select id="esc-zona" class="form-control"><option value="Sede">Sede</option><option value="Zona Rural">Zona Rural</option></select>
+              </div>
+            </div>
+            <div class="mt-16" style="display:flex;justify-content:flex-end;gap:8px">
+              <button class="btn btn-secondary" id="esc-btn-cancelar" onclick="cancelarEscola()" style="display:none">Cancelar</button>
+              <button class="btn btn-primary" onclick="salvarEscola()"><i class="ti ti-device-floppy"></i> <span id="esc-btn-label">Cadastrar Escola</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <h3><i class="ti ti-list" style="color:var(--primary)"></i> Escolas Cadastradas
+              <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:6px">Total <strong id="esc-total">0</strong> &nbsp;·&nbsp; Sede <strong id="esc-sede">0</strong> &nbsp;·&nbsp; Rural <strong id="esc-interior">0</strong> &nbsp;·&nbsp; Sem resp. <strong id="esc-sem-resp">0</strong></span>
+            </h3>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div style="position:relative">
+                <i class="ti ti-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px"></i>
+                <input id="search-escola" class="form-control" style="padding-left:30px;padding-right:30px;height:34px;font-size:13px;width:170px" placeholder="Buscar..." oninput="filtrarEscolas()"/>
+                <button class="mic-btn" id="mic-btn-escola" onclick="vozBuscar('search-escola',filtrarEscolas)" title="Pesquisar por voz"><i class="ti ti-microphone"></i></button>
+              </div>
+              <select id="filter-local" class="form-control" style="width:auto;min-width:110px;height:34px;font-size:13px" onchange="filtrarEscolas()">
+                <option value="">Todas</option><option value="Sede">Sede</option><option value="Zona Rural">Zona Rural</option>
+                <option value="Povoado">Povoado</option><option value="Ass.">Assentamento</option><option value="Faz.">Fazenda</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Escola</th><th>Responsável</th><th>Zona</th><th>Localidade</th><th>CNPJ</th><th>INEP</th><th>Ações</th></tr></thead>
+              <tbody id="tabela-escolas"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
   <!-- Bottom Nav -->
   <nav class="bottom-nav">
     <div class="bn-item active" id="bn-dashboard" onclick="go('dashboard')"><i class="ti ti-layout-dashboard"></i><span>Início</span></div>
     <div class="bn-item" id="bn-produtos" onclick="go('produtos')"><i class="ti ti-box"></i><span>Produtos</span></div>
+    <div class="bn-item" id="bn-escolas" onclick="go('escolas')"><i class="ti ti-school"></i><span>Escolas</span></div>
     <div class="bn-item" id="bn-entrada" onclick="go('entrada')"><i class="ti ti-package-import"></i><span>Entrada</span></div>
     <div class="bn-item" id="bn-saida" onclick="go('saida')"><i class="ti ti-package-export"></i><span>Saída</span></div>
     <div class="bn-item" id="bn-relatorios" onclick="go('relatorios')"><i class="ti ti-chart-bar"></i><span>Relatórios</span></div>
-    <div class="bn-item" id="bn-escolas" onclick="go('escolas')"><i class="ti ti-school"></i><span>Escolas</span></div>
   </nav>
 </div>
-
-<!-- ████ ESCOLAS ████ -->
-<main class="page" id="page-escolas">
-  <div class="page-header no-print">
-    <div><h2>Escolas</h2><p>Gerenciamento das unidades escolares atendidas</p></div>
-  </div>
-
-  <!-- Formulário inline (igual ao estilo Saída) -->
-  <div class="card section-gap" id="esc-form-card">
-    <div class="card-header">
-      <h3 id="esc-form-titulo"><i class="ti ti-school" style="color:var(--primary)"></i> Nova Escola</h3>
-    </div>
-    <div class="card-body">
-      <input type="hidden" id="esc-id"/>
-      <div class="form-grid cols-2">
-        <div class="form-group" style="grid-column:1/-1">
-          <label class="form-label">Nome da Escola *</label>
-          <input id="esc-nome" class="form-control" placeholder="Ex: EM. Exemplo da Silva"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Responsável / Diretor</label>
-          <input id="esc-diretor" class="form-control" placeholder="Nome do responsável"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">CNPJ</label>
-          <input id="esc-cnpj" class="form-control" placeholder="00.000.000/0001-00" maxlength="18"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Código INEP</label>
-          <input id="esc-inep" class="form-control" placeholder="Ex: 21123080" maxlength="8"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Telefone</label>
-          <input id="esc-tel" class="form-control" placeholder="(99) 99999-9999" maxlength="15"/>
-        </div>
-        <div class="form-group" style="grid-column:1/-1">
-          <label class="form-label">Endereço</label>
-          <input id="esc-endereco" class="form-control" placeholder="Ex: Rua Principal, s/n – Centro"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Localidade (específica)</label>
-          <input id="esc-local" class="form-control" placeholder="Ex: Sede, Povoado São João"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Zona</label>
-          <select id="esc-zona" class="form-control">
-            <option value="Sede">Sede</option>
-            <option value="Zona Rural">Zona Rural</option>
-          </select>
-        </div>
-      </div>
-      <div class="mt-16" style="display:flex;justify-content:flex-end;gap:8px">
-        <button class="btn btn-secondary" id="esc-btn-cancelar" onclick="cancelarEscola()" style="display:none">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarEscola()"><i class="ti ti-device-floppy"></i> <span id="esc-btn-label">Cadastrar Escola</span></button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Resumo -->
-  <div class="prod-summary" style="margin-bottom:16px">
-    <div class="ps-cell c-blue"><span id="esc-total">0</span><small>Total</small></div>
-    <div class="ps-cell c-green"><span id="esc-sede">0</span><small>Sede</small></div>
-    <div class="ps-cell c-warn"><span id="esc-interior">0</span><small>Zona Rural</small></div>
-    <div class="ps-cell c-red"><span id="esc-sem-resp">0</span><small>Sem Responsável</small></div>
-  </div>
-
-  <!-- Barra de busca -->
-  <div class="prod-toolbar">
-    <div style="position:relative;flex:1;max-width:320px">
-      <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px"></i>
-      <input id="search-escola" class="form-control" style="padding-left:34px;padding-right:34px"
-             placeholder="Buscar escola ou responsável..." oninput="filtrarEscolas()"/>
-      <button class="mic-btn" id="mic-btn-escola" onclick="vozBuscar('search-escola',filtrarEscolas)" title="Pesquisar por voz"><i class="ti ti-microphone"></i></button>
-    </div>
-    <select id="filter-local" class="form-control" style="max-width:180px" onchange="filtrarEscolas()">
-      <option value="">Todas</option>
-      <option value="Sede">Sede</option>
-      <option value="Zona Rural">Zona Rural</option>
-      <option value="Povoado">Povoado</option>
-      <option value="Ass.">Assentamento</option>
-      <option value="Faz.">Fazenda</option>
-    </select>
-  </div>
-
-  <!-- Tabela -->
-  <div class="prod-table-card">
-    <table class="data-table">
-      <thead><tr>
-        <th>#</th><th>Escola</th><th>Responsável</th><th>Zona</th><th>Localidade</th><th>CNPJ</th><th>INEP</th><th>Ações</th>
-      </tr></thead>
-      <tbody id="tabela-escolas"></tbody>
-    </table>
-  </div>
-</main>
 
 <!-- ── MODAL PRODUTO ── -->
 <div class="modal-bg" id="modal-produto">
@@ -1308,17 +1279,18 @@ function salvarTudo(){setData('produtos',produtos);setData('movimentacoes',movim
 function _listaEscolas(){return escolas.map(e=>e.nome);}
 
 // ═══ NAVEGAÇÃO ═══
-const pageMap={escolas:{page:'page-escolas',nav:'nav-escolas',bn:'bn-escolas',title:'Escolas'},
-  dashboard:{page:'page-dashboard',nav:'nav-dashboard',bn:'bn-dashboard',title:'Dashboard'},
+const pageMap={dashboard:{page:'page-dashboard',nav:'nav-dashboard',bn:'bn-dashboard',title:'Dashboard'},
   produtos:{page:'page-produtos',nav:'nav-produtos',bn:'bn-produtos',title:'Produtos'},
   entrada:{page:'page-entrada',nav:'nav-entrada',bn:'bn-entrada',title:'Entrada'},
   saida:{page:'page-saida',nav:'nav-saida',bn:'bn-saida',title:'Saída / Distribuição'},
   relatorios:{page:'page-relatorios',nav:'nav-relatorios',bn:'bn-relatorios',title:'Relatórios'},
+  escolas:{page:'page-escolas',nav:'nav-escolas',bn:'bn-escolas',title:'Escolas'},
 };
 let paginaAtual='dashboard';
 
 function go(id){
   closeSidebar();
+  window.scrollTo(0,0);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.bn-item').forEach(n=>n.classList.remove('active'));
@@ -1609,6 +1581,7 @@ function registrarSaida(){
 }
 
 // ═══ RELATÓRIOS ═══
+
 // ═══ ESCOLAS ═══
 let _escFiltradas=[];
 function renderEscolas(){
@@ -1645,14 +1618,12 @@ function _atualizarTabelaEscolas(lista){
       <td><small style="color:var(--muted)">${e.inep||'—'}</small></td>
       <td>
         <button class="tbl-btn tbl-btn-edit" onclick="editarEscola(${e.id})"><i class="ti ti-pencil"></i></button>
-        <button class="tbl-btn tbl-btn-del"  onclick="excluirEscola(${e.id})"><i class="ti ti-trash"></i></button>
+        <button class="tbl-btn tbl-btn-del" onclick="excluirEscola(${e.id})"><i class="ti ti-trash"></i></button>
       </td>
     </tr>`).join('');
 }
 function _limparFormEscola(){
-  ['esc-id','esc-nome','esc-diretor','esc-cnpj','esc-inep','esc-tel','esc-endereco','esc-local'].forEach(id=>{
-    document.getElementById(id).value='';
-  });
+  ['esc-id','esc-nome','esc-diretor','esc-cnpj','esc-inep','esc-tel','esc-endereco','esc-local'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('esc-zona').value='Sede';
   document.getElementById('esc-form-titulo').innerHTML='<i class="ti ti-school" style="color:var(--primary)"></i> Nova Escola';
   document.getElementById('esc-btn-label').textContent='Cadastrar Escola';
@@ -1784,6 +1755,11 @@ function gerarRelatorio(){
     :lista.map(m=>`<tr><td>${m.data}</td><td><span class="badge ${m.tipo==='Entrada'?'badge-ok':'badge-info'}">${m.tipo}</span></td><td>${m.produto}</td><td>${m.qtd} ${m.unidade}</td><td>${m.destino||'—'}</td><td>${m.responsavel||m.nf||'—'}</td><td>${m.obs||'—'}</td></tr>`).join('');
 }
 function imprimirRelatorio(){window.print();}
+function gerarEImprimir(){
+  gerarRelatorio();
+  if(document.getElementById('rel-resultado-card').style.display==='none')return;
+  setTimeout(()=>window.print(),350);
+}
 
 // ═══ UTILS ═══
 function hojeISO(){return new Date().toISOString().split('T')[0];}
